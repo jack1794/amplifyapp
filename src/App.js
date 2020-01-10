@@ -8,11 +8,13 @@ class App extends React.Component {
       webSocket: {},
       message: 'Please provide a message',
       serverName: "Please enter a server name",
-      clickCounter: 0
+      receiveMessages: []
     }
     this.updateMessage = this.updateMessage.bind(this)
     this.sendMessage = this.sendMessage.bind(this)
+    this.connectServer = this.connectServer.bind(this)
     this.updateServerName = this.updateServerName.bind(this)
+    this.receiveMessage = this.receiveMessage.bind(this)
   }
 
   updateServerName(event) {
@@ -23,34 +25,62 @@ class App extends React.Component {
      this.setState({message: event.target.value})
   }
 
+  connectServer() {
+    const webSocket = new WebSocket(this.state.serverName);
+    this.setState({webSocket})
+
+    webSocket.onmessage = this.receiveMessage
+  }
+
   sendMessage(event) {
     event.preventDefault()
-    let { message, clickCounter, webSocket } = this.state;
-    this.setState({clickCounter: clickCounter += 1})
-    if(clickCounter < 2) {
-      webSocket = new WebSocket(this.state.serverName);
-      this.setState({webSocket})
-    }
+    let { message, webSocket } = this.state;
     webSocket.send(
       JSON.stringify({"action":"sendmessage", "data": message})
     ); 
     this.setState({message: "Please provide a message"})
   }
 
+  receiveMessage(message) {
+    let { receiveMessages } = this.state
+
+    receiveMessages.push(message.data)
+
+    console.log(message)
+    console.log(receiveMessages)
+
+    this.setState({receiveMessages})
+  }
+
   render() {
     return (
       <div>
         <div>
-          <form onSubmit={this.sendMessage}></form>
+
+          <p>Enter Server Name: </p>
+          <input type="text" name="server-name" onChange={this.updateServerName}/>
+
+          <button
+            onClick={this.connectServer}
+          >
+            Connect
+          </button>
+
           <p>Enter Message: </p>
-          <input type="text" name="message" onChange={this.updateMessage} value={this.state.message}/>
-          <input type="text" name="server-name" onChange={this.updateServerName} value={this.state.serverName}/>
-          <input
-            type="submit"
-            value="Submit"
-          ></input>
+          <input type="text" name="message" onChange={this.updateMessage} />
+
+          <button
+            onClick={this.sendMessage}
+          >
+            Send
+          </button>
+
         </div>
-        <div id="messages"></div>
+        <div id="messages">
+          {this.state.receiveMessages.map((item) => (
+            <div>{item}</div>
+          ))}
+        </div>
       </div>
     )
   }
